@@ -5,7 +5,7 @@ from OpenGL.GLU import *
 import math
 import time
 
-# Camera-related variables from the original template
+
 camera_pos = (0, 500, 500)
 fovY = 86
 GRID_LENGTH = 650
@@ -14,16 +14,14 @@ rand_var = 423
 WINDOW_W = 1000
 WINDOW_H = 800
 
-# Camera state
 camera_angle = 44.0
 camera_radius = 760.0
 camera_height = 520.0
-camera_mode = "TOP"      # TOP or DRIVER/FOLLOW chase view
+camera_mode = "TOP"     
 follow_vehicle_index = 0
 smooth_eye = None
 smooth_look = None
 
-# Road and traffic constants
 LANE_WIDTH = 38.0
 ROAD_HALF = 88.0
 SPAWN_DISTANCE = 650.0
@@ -32,14 +30,12 @@ STOP_LINE = 132.0
 SAFE_GAP = 86.0
 MAX_VEHICLES = 20
 
-# Direction order used by vehicle paths: 0 East, 1 North, 2 West, 3 South
 DIR_NAMES = ["EAST", "NORTH", "WEST", "SOUTH"]
 DIR_SHORT = ["E", "N", "W", "S"]
 DIR_VECTORS = [(1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), (0.0, -1.0)]
-AUTO_ORDER = [1, 0, 3, 2]  # North, East, South, West
+AUTO_ORDER = [1, 0, 3, 2]  
 BUTTON_DIRS = [("N", 1), ("E", 0), ("S", 3), ("W", 2)]
 
-# Simulation state
 vehicles = []
 completed_count = 0
 total_completed_wait = 0.0
@@ -52,18 +48,15 @@ spawn_interval = 1.85
 manual_incident = False
 day_mode = True
 
-# Traffic signal state
 traffic_auto = True
 active_direction = 1
 pending_direction = 0
 auto_index = 0
-signal_phase = "GREEN"      # GREEN or YELLOW_SWITCH
-green_timer = 0.0
+signal_phase = "GREEN"     
 transition_timer = 0.0
 GREEN_DURATION = 8.5
 YELLOW_DURATION = 2.0
 
-# Dynamic events
 pedestrian_crossing_active = False
 lane_block_active = False
 BLOCKAGE_DIR = 0
@@ -71,11 +64,9 @@ BLOCKAGE_LANE = 1
 BLOCKAGE_LONGITUDINAL = -305.0
 BLOCKAGE_S = SPAWN_DISTANCE + BLOCKAGE_LONGITUDINAL
 
-# Analytics cache
 queue_counts = [0, 0, 0, 0]
 crash_count = 0
 
-# HUD buttons: x0, y0, x1, y1, label, action
 BUTTONS = []
 
 
@@ -144,7 +135,7 @@ def exit_2d():
 
 
 def draw_panel_rect(x1, y1, x2, y2, color):
-    # Opaque screen-space cuboid.
+
     cx = (x1 + x2) * 0.5
     cy = (y1 + y2) * 0.5
     sx = abs(x2 - x1)
@@ -168,12 +159,6 @@ def night_tint(color, amount=0.34):
 
 
 def draw_flat_rect(x1, y1, x2, y2, z, color):
-    """Draw a very thin solid 3D slab instead of a plain flat plane.
-
-    The original helper name is kept so the rest of the project stays simple,
-    but every road, crosswalk, lane mark, ground patch, and light marker is now
-    rendered as an opaque 3D cuboid using only template-safe cube drawing.
-    """
     cx = (x1 + x2) * 0.5
     cy = (y1 + y2) * 0.5
     sx = abs(x2 - x1)
@@ -355,7 +340,7 @@ class Vehicle:
         self.dist = initial_distance
         self.stop_s = SPAWN_DISTANCE - STOP_LINE
 
-        # Consistent proportions with small realistic variation.
+        
         self.kind = "bus" if rand01() < 0.15 else "car"
         if self.kind == "bus":
             self.length = 82.0
@@ -443,7 +428,7 @@ def desired_vehicle_speed(vehicle):
     dist_to_stop = vehicle.stop_s - front_s
     color = get_signal_color(vehicle.start_direction)
 
-    # Signal response: gradual braking for red/yellow, small creep on red->yellow.
+
     if dist_to_stop > -5.0 and dist_to_stop < 230.0:
         must_stop = False
         if color == "RED":
@@ -462,7 +447,7 @@ def desired_vehicle_speed(vehicle):
             target = min(target, max(0.0, dist_to_stop * 1.10))
             stop_at = vehicle.stop_s
 
-    # Dynamic lane blockage.
+  
     if lane_block_active and vehicle.start_direction == BLOCKAGE_DIR and vehicle.lane_index == BLOCKAGE_LANE:
         blockage_stop_s = BLOCKAGE_S - 42.0
         dist_to_block = blockage_stop_s - front_s
@@ -471,7 +456,7 @@ def desired_vehicle_speed(vehicle):
             if stop_at is None or blockage_stop_s < stop_at:
                 stop_at = blockage_stop_s
 
-    # Safe following distance on the same lane.
+  
     for other in vehicles:
         if other is vehicle:
             continue
@@ -485,7 +470,6 @@ def desired_vehicle_speed(vehicle):
                 if gap < 10.0:
                     stop_at = vehicle.dist + max(0.0, gap)
 
-        # Spatial caution inside the intersection for turning/crossing paths.
         dx = other.x - vehicle.x
         dy = other.y - vehicle.y
         forward = math.cos(vehicle.heading) * dx + math.sin(vehicle.heading) * dy
@@ -620,8 +604,7 @@ def draw_vehicle(vehicle):
         idle_z = math.sin(vehicle.idle_phase) * 0.28
         idle_x = math.cos(vehicle.idle_phase * 0.7) * 0.12
 
-    # Decide which side of the car faces the camera. The local +Y side is the
-    # left side of the vehicle after its heading rotation.
+   
     center_x = vehicle.x + vehicle.push_x
     center_y = vehicle.y + vehicle.push_y
     rel_x = camera_pos[0] - center_x
@@ -641,14 +624,11 @@ def draw_vehicle(vehicle):
     if vehicle.kind == "bus":
         wheel_y = 18.0
 
-        # Hidden-side wheels are not drawn because the assignment template does
-        # not enable depth testing. Drawing only the exposed side prevents the
-        # unrealistic "all four wheels visible through the vehicle" problem.
+
         draw_box_local(0, 0, 15, vehicle.length, vehicle.width, vehicle.height, body)
         draw_box_local(3, 0, 31, vehicle.length * 0.72, vehicle.width * 0.82, 9, roof)
 
-        # Windows are only placed on the visible side to avoid seeing through
-        # the vehicle when depth testing is unavailable.
+ 
         for xw in [-26, -8, 10, 28]:
             draw_box_local(xw, visible_side * 17, 28, 10, 2, 8, (0.45, 0.76, 0.96))
 
@@ -659,16 +639,12 @@ def draw_vehicle(vehicle):
         draw_box_local(-43, -9, 19, 3, 5, 4, brake_color)
         draw_box_local(-43, 9, 19, 3, 5, 4, brake_color)
 
-        # Visible-side wheels only, like a real side/chase view.
         draw_wheel(28, visible_side * wheel_y, vehicle, True)
         draw_wheel(-30, visible_side * wheel_y, vehicle, False)
 
     else:
         wheel_y = 16.0
 
-        # Hidden-side wheels are not drawn because the assignment template does
-        # not enable depth testing. Drawing only the exposed side prevents the
-        # unrealistic "all four wheels visible through the vehicle" problem.
         draw_box_local(0, 0, 11, vehicle.length, vehicle.width, 16, body)
         draw_box_local(-5, 0, 24, 29, 22, 14, roof)
         draw_box_local(12, 0, 26, 7, 23, 5, (0.35, 0.70, 0.95))
@@ -682,8 +658,7 @@ def draw_vehicle(vehicle):
         draw_box_local(-28, -8, 15, 2.5, 5, 3, brake_color)
         draw_box_local(-28, 8, 15, 2.5, 5, 3, brake_color)
 
-        # Visible-side wheels only. This prevents all four wheels from being
-        # visible at the same time in the low follow camera.
+
         draw_wheel(18, visible_side * wheel_y, vehicle, True)
         draw_wheel(-18, visible_side * wheel_y, vehicle, False)
 
@@ -777,7 +752,7 @@ def count_traffic_queues():
 
 
 def draw_axis_arm(x1, y1, x2, y2, z_bottom, color):
-    """Draw one fixed mast-arm segment as an opaque 3D cuboid."""
+   
     width = 6.0
     sx = max(width, abs(x2 - x1))
     sy = max(width, abs(y2 - y1))
@@ -787,19 +762,14 @@ def draw_axis_arm(x1, y1, x2, y2, z_bottom, color):
 
 
 def draw_signal_head(direction, bx, by):
-    """Draw a fixed 3D signal head that faces the correct road direction.
 
-    The bulbs are placed on the side facing the approaching traffic. The head
-    stays in world coordinates and never rotates with the camera.
-    """
     dx, dy = DIR_VECTORS[direction]
     red, yellow, green = signal_light_colors(direction)
     head_color = (0.025, 0.025, 0.025)
     hood_color = (0.055, 0.055, 0.055)
     back_color = (0.015, 0.015, 0.015)
 
-    # Head is much higher than all vehicles, so cars pass underneath the mast
-    # arm instead of visually driving through the signal.
+
     if abs(dx) > 0.5:
         draw_box_world(bx, by, 78, 16, 34, 58, head_color)
         draw_box_world(bx + dx * 3.0, by, 75, 4, 40, 64, back_color)
@@ -831,22 +801,15 @@ def draw_signal_head(direction, bx, by):
 
 
 def draw_traffic_light(direction):
-    """Draw a fixed real-world style traffic signal.
 
-    The pole is placed outside the drivable lane, the mast arm is above vehicle
-    height, and the signal head is fixed in world space. Camera movement only
-    changes the viewpoint; it does not rotate or move the traffic light.
-    """
     dx, dy = DIR_VECTORS[direction]
     rx, ry = right_vector(direction)
 
-    # Signal head: centered above the incoming lane group before the stop line.
     head_longitudinal = -STOP_LINE - 6.0
     head_offset = LANE_WIDTH
     bx = dx * head_longitudinal + rx * head_offset
     by = dy * head_longitudinal + ry * head_offset
 
-    # Pole: safely outside the road/curb so vehicles cannot drive through it.
     pole_longitudinal = -STOP_LINE - 36.0
     pole_offset = ROAD_HALF + 64.0
     px = dx * pole_longitudinal + rx * pole_offset
@@ -855,19 +818,16 @@ def draw_traffic_light(direction):
     pole_color = scene_color((0.20, 0.20, 0.20), (0.12, 0.12, 0.14))
     base_color = scene_color((0.38, 0.38, 0.36), (0.18, 0.18, 0.20))
 
-    # Concrete base and tall pole outside the road.
     draw_box_world(px, py, 0.0, 22.0, 22.0, 8.0, base_color)
     draw_cylinder_z(px, py, 7.5, 4.0, 112.0, pole_color)
 
-    # L-shaped fixed mast arm. It is made of two axis-aligned 3D segments, not a
-    # camera-facing billboard and not a rotating object.
+
     z_arm = 112.0
     joint_x = bx
     joint_y = py
     draw_axis_arm(px, py, joint_x, joint_y, z_arm, pole_color)
     draw_axis_arm(joint_x, joint_y, bx, by, z_arm, pole_color)
 
-    # Small vertical hanger from the arm to the signal head.
     draw_cylinder_z(bx, by, 106.0, 2.4, 18.0, pole_color)
     draw_box_world(bx, by, 102.0, 9.0, 9.0, 8.0, pole_color)
 
@@ -994,18 +954,14 @@ def draw_sun_moon_and_lamps():
     hood_color = scene_color((0.24, 0.24, 0.25), (0.12, 0.12, 0.15))
 
     for lx, ly in lamp_positions:
-        # Every lamppost part is an opaque 3D primitive in day and night.
         draw_cylinder_z(lx, ly, 0, 3.0, 58, pole_color)
         draw_box_world(lx, ly, 58, 11, 11, 3, pole_color)
         draw_box_world(lx + 8, ly, 61, 16, 4, 3, pole_color)
         draw_box_world(lx + 16, ly, 58, 12, 10, 6, hood_color)
 
         if day_mode:
-            # Day mode: bulb exists but is visibly off.
             draw_sphere_world(lx + 16, ly, 55, 4.8, off_bulb)
         else:
-            # Night mode: lamp is ON with solid 3D light geometry.
-            # The visible light uses solid warm 3D cones and solid road slabs.
             draw_cone_z(lx + 16, ly, 5, 28.0, 4.0, 50.0, (0.42, 0.34, 0.09))
             draw_box_world(lx + 16, ly, 0.7, 68, 34, 0.8, (0.32, 0.26, 0.07))
             draw_box_world(lx + 16, ly, 1.0, 38, 18, 0.9, (0.50, 0.40, 0.10))
@@ -1337,8 +1293,6 @@ def setupCamera():
         else:
             idx = follow_vehicle_index
         v = vehicles[idx]
-        # Right-click follow view: low chase/driver perspective behind the selected car,
-        # looking down the road like a real driving camera.
         back = 145.0 if v.kind == "car" else 175.0
         up = 76.0 if v.kind == "car" else 88.0
         eye_x = v.x - math.cos(v.heading) * back
@@ -1357,7 +1311,7 @@ def setupCamera():
         look_z = 18.0
 
     if camera_mode == "TOP":
-        # Top/orbit camera is intentionally direct so arrow-key rotation feels responsive.
+
         smooth_eye = (eye_x, eye_y, eye_z)
         smooth_look = (look_x, look_y, look_z)
     elif smooth_eye is None:
@@ -1507,9 +1461,6 @@ def showScreen():
     for car in ordered:
         draw_vehicle(car)
 
-    # Draw traffic signals after vehicles so they remain visible at all times.
-    # Their poles are outside lanes and their heads are above vehicle height, so
-    # this improves visibility without making the lights camera-attached.
     for direction in range(4):
         draw_traffic_light(direction)
 
