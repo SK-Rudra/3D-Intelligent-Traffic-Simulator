@@ -27,3 +27,18 @@ Install Python and PyOpenGL:
 
 ```bash
 pip install PyOpenGL PyOpenGL_accelerate
+Controls
+Arrow keys: Rotate camera
+W / S: Zoom in and out
+M: Toggle Auto/Manual mode
+1: North green
+2: East green
+3: South green
+4: West green
+N: Day/Night toggle
+Right mouse click: First-person/follow camera
+TAB: Cycle followed vehicle
+ESC: Return to top camera
+P or Space: Pause
+R: Reset
+/ -: Add or remove vehicles
